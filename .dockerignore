@@ -1,0 +1,8 @@
+.editorconfig
+.git
+.travis.yml
+*.zip
+LICENSE
+Makefile
+README.md
+cli
