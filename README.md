@@ -35,7 +35,7 @@ COMMIT_HASH=`git rev-parse --short HEAD`
 FULL_COMMIT=`git log -1`
 VER=0.0.0
 go build -ldflags \
-  "-X main.build_dt=${BUILD_DT} -X main.commit=${COMMIT_HASH} -X main.version=${VER}" \
+  "-X main.buildDt=${BUILD_DT} -X main.commit=${COMMIT_HASH} -X main.version=${VER}" \
   -o cli cmd/cli/main.go
 ```
 

@@ -11,7 +11,7 @@ RUN \
   && echo "BUILD commit_hash=${COMMIT_HASH}" \
   && echo "BUILD version=${VER}" \
   && CGO_ENABLED=0 GOOS=linux go build -ldflags \
-    "-X main.build_dt=${BUILD_DT} -X main.commit=${COMMIT_HASH} -X main.version=${VER}" \
+    "-X main.buildDt=${BUILD_DT} -X main.commit=${COMMIT_HASH} -X main.version=${VER}" \
     -o cli cmd/cli/main.go
 
 FROM scratch

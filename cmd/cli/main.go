@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	build_dt string
-	commit   string
-	version  string
+	buildDt string
+	commit  string
+	version string
 )
 
 func main() {
@@ -68,5 +68,5 @@ func main() {
 func printVersion() {
 	fmt.Println("rabbitmq-to-hec  Version:", version,
 		" Commit:", commit,
-		" Built at:", build_dt)
+		" Built at:", buildDt)
 }
