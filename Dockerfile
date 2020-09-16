@@ -1,6 +1,6 @@
 FROM golang as builder
 ARG SOURCE_COMMIT=unset
-ARG VER=0.0.1
+ARG VER=1.0.0
 RUN mkdir /app
 COPY . /app/
 WORKDIR /app
