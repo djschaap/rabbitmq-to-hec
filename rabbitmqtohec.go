@@ -11,8 +11,10 @@ import (
 	"github.com/djschaap/rabbitmq-to-hec/sendhec"
 	hec "github.com/fuyufjh/splunk-hec-go"
 	"github.com/kr/pretty"
+	streadway_amqp "github.com/streadway/amqp"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"time"
 )
@@ -42,8 +44,12 @@ type mqConsumer struct {
 }
 
 type sess struct {
-	HecConfig *HecConfig
-	MqConfig  *MqConfig
+	HecConfig         *HecConfig
+	MqConfig          *MqConfig
+	amqpPrefetchCount int
+	hostname          string
+	pid               int
+	product           string
 }
 
 func (c *mqConsumer) Shutdown() error {
@@ -91,15 +97,23 @@ func (self *sess) connectToRabbitMq(
 	ctag string, // AMQP consumer tag
 ) (*mqConsumer, error) {
 	var err error
+	amqpConfig := streadway_amqp.Config{
+		Properties: streadway_amqp.Table{
+			"hostname": self.hostname,
+			"pid":      self.pid,
+			"product":  self.product,
+			//"version": "0.0.0",
+		},
+	}
 	c := &mqConsumer{
 		conn:    nil,
 		channel: nil,
 		tag:     ctag,
 		done:    make(chan error),
 	}
-	c.conn, err = amqp.Dial(self.MqConfig.Url)
+	c.conn, err = amqp.DialConfig(self.MqConfig.Url, amqpConfig)
 	if err != nil {
-		return nil, fmt.Errorf("connectToRabbitMq Dial: %s", err)
+		return nil, fmt.Errorf("connectToRabbitMq DialConfig: %s", err)
 	}
 	return self.reconnectToRabbitMq(c)
 }
@@ -115,6 +129,14 @@ func (self *sess) reconnectToRabbitMq(
 	c.channel, err = c.conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("connectToRabbitMq Channel: %s", err)
+	}
+	err = c.channel.Qos(
+		self.amqpPrefetchCount, // prefetch count
+		0,                      // prefetch size
+		false,                  // global
+	)
+	if err != nil {
+		return nil, fmt.Errorf("channel.QoS: %s", err)
 	}
 
 	queue, err := c.channel.QueueDeclare(
@@ -167,9 +189,17 @@ func New(
 	hecConfig HecConfig,
 	mqConfig MqConfig,
 ) sess {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatalf("level=FATAL os.Hostname() failed: %s", err)
+	}
 	s := sess{
-		HecConfig: &hecConfig,
-		MqConfig:  &mqConfig,
+		HecConfig:         &hecConfig,
+		MqConfig:          &mqConfig,
+		amqpPrefetchCount: 100,
+		hostname:          hostname,
+		pid:               os.Getpid(),
+		product:           "rabbitmq-to-hec",
 	}
 	return s
 }
