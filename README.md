@@ -48,8 +48,8 @@ docker build -t rabbitmq-to-hec .
 ### Run Container
 
 ```bash
-export MQ_URL=amqp://guest:guest@localhost:5672
-docker run -d -e MQ_URL \
+export AMQP_HOST=localhost
+docker run -d -e AMQP_HOST \
   -e SRC_QUEUE=q_name \
   -e HEC_URL=https://splunk.example.com:8088 \
   -e HEC_TOKEN=00000000-0000-0000-0000-000000000000 \
