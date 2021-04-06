@@ -19,4 +19,4 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/.env /
 COPY --from=builder /app/cli /
 USER 999:999
-CMD ["/cli","-lifetime","0"]
+CMD ["/cli"]

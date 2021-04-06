@@ -54,5 +54,4 @@ docker run -d -e AMQP_HOST \
   -e HEC_URL=https://splunk.example.com:8088 \
   -e HEC_TOKEN=00000000-0000-0000-0000-000000000000 \
   rabbitmq-to-hec
-# append "/cli -lifetime 5" to run for 5 seconds and exit
 ```

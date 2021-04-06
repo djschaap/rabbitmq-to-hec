@@ -40,9 +40,9 @@ func TestHandleDelivery(t *testing.T) {
 			if err == nil {
 				t.Errorf("expected error, got success=%d", success)
 			}
-			gotError, _ := regexp.MatchString(`^REJECTING unparsable delivery`, err.Error())
+			gotError, _ := regexp.MatchString(`^unparsable \d+B delivery`, err.Error())
 			if !gotError {
-				t.Error("expected REJECTING unparsable delivery, got:", err)
+				t.Error("expected unparsable \\d+B delivery, got:", err)
 			}
 			if success != 0 {
 				t.Errorf("expected success=0, got: %#v", success)

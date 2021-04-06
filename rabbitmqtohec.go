@@ -68,22 +68,21 @@ func (c *mqConsumer) Shutdown() error {
 	return <-c.done
 }
 
-func (self *sess) RunOnce(runDuration time.Duration) error {
+func (self *sess) RunOnce() error {
 	var err error
 
 	c, err := self.connectToRabbitMq(
 		"rabbitmq-to-hec",
 	)
 	if err != nil {
-		return fmt.Errorf("connectToRabbitMq: %s", err)
+		return fmt.Errorf("connectToRabbitMq unable to connect: %s", err)
 	}
 
-	if runDuration > 0 {
-		fmt.Printf("running for %s\n", runDuration)
-		time.Sleep(runDuration)
-	} else {
-		fmt.Println("running forever")
-		select {}
+	fmt.Println("running forever")
+
+	done := <-c.done
+	if done != nil {
+		return fmt.Errorf("terminating due to error from handleMessages: %s", done)
 	}
 
 	if err := c.Shutdown(); err != nil {
@@ -123,12 +122,12 @@ func (self *sess) reconnectToRabbitMq(
 ) (*mqConsumer, error) {
 	var err error
 	go func() {
-		fmt.Printf("connectToRabbitMq: closing connection: %s\n", <-c.conn.NotifyClose(make(chan wabbit.Error)))
+		fmt.Printf("reconnectToRabbitMq: closing connection due to error: %s\n", <-c.conn.NotifyClose(make(chan wabbit.Error)))
 	}()
 
 	c.channel, err = c.conn.Channel()
 	if err != nil {
-		return nil, fmt.Errorf("connectToRabbitMq Channel: %s", err)
+		return nil, fmt.Errorf("reconnectToRabbitMq Channel: %s", err)
 	}
 	err = c.channel.Qos(
 		self.amqpPrefetchCount, // prefetch count
@@ -149,7 +148,7 @@ func (self *sess) reconnectToRabbitMq(
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("connectToRabbitMq Queue Declare: %s", err)
+		return nil, fmt.Errorf("reconnectToRabbitMq Queue Declare: %s", err)
 	}
 
 	deliveries, err := c.channel.Consume(
@@ -163,7 +162,7 @@ func (self *sess) reconnectToRabbitMq(
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("connectToRabbitMq Queue Consume: %s", err)
+		return nil, fmt.Errorf("reconnectToRabbitMq Queue Consume: %s", err)
 	}
 
 	hasHecUrl, _ := regexp.MatchString(`\S`, self.HecConfig.Url)
@@ -247,7 +246,7 @@ func handleDelivery(d wabbit.Delivery, hecConfig HecConfig) (int, error) {
 	}
 
 	// invalid HEC message
-	return deliveryFailure, fmt.Errorf("REJECTING unparsable delivery: %#v", d)
+	return deliveryFailure, fmt.Errorf("unparsable %dB delivery: [%v] %q", len(d.Body()), d.DeliveryTag(), d.Body())
 }
 
 func handleMessages(
@@ -263,17 +262,19 @@ func handleMessages(
 			//   queue) would be ideal here, but doesn't work
 			//   as expected:
 			//   https://www.rabbitmq.com/blog/2010/08/03/well-ill-let-you-go-basicreject-in-rabbitmq/
+			log.Printf("WARNING reject delivery: %s", err)
 			d.Reject(false)
 		} else if success == deliverySuccess {
 			// success
 			d.Ack(false)
 		} else {
 			// transient failure, so nack with requeue
+			log.Printf("WARNING nack delivery: success=%#v", success)
 			d.Nack(false, true)
 			time.Sleep(1 * time.Second)
 		}
 	}
-	fmt.Printf("handleMessages: deliveries channel closed")
+	fmt.Println("handleMessages: deliveries channel closed")
 	done <- nil
 }
 

@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"time"
 )
 
 var (
@@ -55,10 +54,11 @@ func buildAmqpUrl() string {
 func main() {
 	printVersion()
 
-	var runSeconds int
-	flag.IntVar(&runSeconds, "lifetime", 5,
-		"max runtime in seconds (0 = run forever)")
+	printVersion := flag.Bool("v", false, "print version and exit")
 	flag.Parse()
+	if *printVersion {
+		os.Exit(0)
+	}
 
 	err := godotenv.Load()
 	if err != nil {
@@ -96,7 +96,7 @@ func main() {
 		app.SetTrace(true)
 	}
 
-	err = app.RunOnce(time.Duration(runSeconds) * time.Second)
+	err = app.RunOnce()
 	if err != nil {
 		log.Fatalf("Error from RunOnce: %s", err)
 	}
