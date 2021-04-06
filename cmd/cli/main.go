@@ -18,10 +18,6 @@ var (
 
 func buildAmqpUrl() string {
 	var amqpUrl string
-	amqpUrl = os.Getenv("MQ_URL")
-	if len(amqpUrl) > 0 {
-		return amqpUrl
-	}
 
 	amqpHost := os.Getenv("AMQP_HOST")
 	amqpPassword := os.Getenv("AMQP_PASSWORD")
@@ -71,7 +67,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("INTERNAL ERROR parsing AMQP_URL: %s", err)
 		} else {
-			log.Fatal("MQ_URL must begin with amqp:// or amqps://")
+			log.Fatal("AMQP URL must begin with amqp:// or amqps://")
 		}
 	}
 
